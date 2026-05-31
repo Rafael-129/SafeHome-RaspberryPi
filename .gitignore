@@ -1,0 +1,7 @@
+.env
+venv/
+data/encodings/*.pkl
+data/fotos/
+logs/
+__pycache__/
+*.pyc
