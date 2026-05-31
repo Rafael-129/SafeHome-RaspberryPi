@@ -22,10 +22,10 @@ class ApiClient:
             return False
 
     def frame_a_base64(self, frame):
-        pequeno = cv2.resize(frame, (160, 120))
-        _, buffer = cv2.imencode(".jpg", pequeno, [cv2.IMWRITE_JPEG_QUALITY, 30])
+        pequeno = cv2.resize(frame, (400, 300))
+        _, buffer = cv2.imencode(".jpg", pequeno, [cv2.IMWRITE_JPEG_QUALITY, 70])
         return "data:image/jpeg;base64," + base64.b64encode(buffer).decode("utf-8")
-
+        
     def registrar_escaneo(self, idusuario, frame):
         foto = self.frame_a_base64(frame)
         payload = {
