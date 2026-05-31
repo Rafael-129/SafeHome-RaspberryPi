@@ -4,6 +4,7 @@ from config import SCAN_INTERVAL, LOG_FILE, RESIDENTES
 from core.camera import Camera
 from core.recognizer import Recognizer
 from core.api_client import ApiClient
+from core.sync_visitantes import sincronizar_visitantes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,6 +28,7 @@ def main():
     log.info("Backend conectado.")
 
     recognizer = Recognizer()
+    sincronizar_visitantes()
     recognizer.cargar_encodings()
 
     camera = Camera()
@@ -48,53 +50,70 @@ def main():
                 time.sleep(1)
                 continue
 
-            nombre = recognizer.reconocer(frame)
+            persona = recognizer.reconocer(frame)
+            ahora = time.time()
 
-            if nombre is None:
+            if persona is None:
                 time.sleep(SCAN_INTERVAL)
                 continue
 
-            if nombre == "desconocido":
-                ahora = time.time()
+            tipo = persona.get("tipo")
+
+            # ── DESCONOCIDO ──────────────────────────────────────────
+            if tipo == "desconocido":
                 if ultimo_reconocido == "desconocido" and (ahora - ultimo_tiempo) < COOLDOWN:
                     time.sleep(0.5)
                     continue
-                log.warning("Rostro desconocido detectado. Acceso DENEGADO.")
-                scanner_resp = api.registrar_escaneo(None, frame)
-                if scanner_resp:
-                    idscanner = scanner_resp.get("idscanner")
-                    api.registrar_historial(None, idscanner, "Denegado", idvisitante=8)
+                log.warning("Rostro desconocido. Acceso DENEGADO.")
+                api.registrar_historial(None, None, "Denegado", idvisitante=8)
                 ultimo_reconocido = "desconocido"
                 ultimo_tiempo = ahora
                 time.sleep(SCAN_INTERVAL)
                 continue
 
-            # Residente reconocido
-            ahora = time.time()
-            if nombre == ultimo_reconocido and (ahora - ultimo_tiempo) < COOLDOWN:
-                time.sleep(0.5)
-                continue
-
-            idusuario = RESIDENTES.get(nombre)
-            if idusuario is None:
-                log.warning(f"{nombre} reconocido pero sin idusuario en config.")
+            # ── VISITANTE ─────────────────────────────────────────────
+            if tipo == "visitante":
+                idvisitante = persona.get("idvisitante")
+                clave = f"visitante_{idvisitante}"
+                if ultimo_reconocido == clave and (ahora - ultimo_tiempo) < COOLDOWN:
+                    time.sleep(0.5)
+                    continue
+                log.info(f"Visitante reconocido: idvisitante={idvisitante}")
+                scanner_resp = api.registrar_escaneo_visitante(idvisitante, frame)
+                if scanner_resp and scanner_resp.get("autorizado"):
+                    idscanner = scanner_resp.get("idscanner")
+                    api.registrar_historial(None, idscanner, "Permitido", idvisitante=idvisitante)
+                    log.info(f"Acceso PERMITIDO: visitante {idvisitante}")
+                else:
+                    log.warning(f"Acceso DENEGADO: visitante {idvisitante}")
+                ultimo_reconocido = clave
+                ultimo_tiempo = ahora
                 time.sleep(SCAN_INTERVAL)
                 continue
 
-            log.info(f"Reconocido: {nombre} (idusuario={idusuario})")
-            scanner_resp = api.registrar_escaneo(idusuario, frame)
-
-            if scanner_resp and scanner_resp.get("autorizado"):
-                idscanner = scanner_resp.get("idscanner")
-                api.registrar_historial(idusuario, idscanner, "Permitido")
-                log.info(f"Acceso PERMITIDO: {nombre}")
-            else:
-                log.warning(f"Acceso DENEGADO: {nombre}")
-
-            ultimo_reconocido = nombre
-            ultimo_tiempo = ahora
-
-            time.sleep(SCAN_INTERVAL)
+            # ── RESIDENTE ─────────────────────────────────────────────
+            if tipo == "residente":
+                nombre = persona.get("nombre")
+                if ultimo_reconocido == nombre and (ahora - ultimo_tiempo) < COOLDOWN:
+                    time.sleep(0.5)
+                    continue
+                idusuario = RESIDENTES.get(nombre)
+                if idusuario is None:
+                    log.warning(f"{nombre} sin idusuario en config.")
+                    time.sleep(SCAN_INTERVAL)
+                    continue
+                log.info(f"Residente reconocido: {nombre} (idusuario={idusuario})")
+                scanner_resp = api.registrar_escaneo(idusuario, frame)
+                if scanner_resp and scanner_resp.get("autorizado"):
+                    idscanner = scanner_resp.get("idscanner")
+                    api.registrar_historial(idusuario, idscanner, "Permitido")
+                    log.info(f"Acceso PERMITIDO: {nombre}")
+                else:
+                    log.warning(f"Acceso DENEGADO: {nombre}")
+                ultimo_reconocido = nombre
+                ultimo_tiempo = ahora
+                time.sleep(SCAN_INTERVAL)
+                continue
 
     except KeyboardInterrupt:
         log.info("Scanner detenido.")
