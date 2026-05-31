@@ -9,24 +9,35 @@ from config import ENCODINGS_DIR, TOLERANCE
 class Recognizer:
     def __init__(self):
         self.encodings = []
-        self.nombres = []
+        self.personas = []
 
     def cargar_encodings(self):
         self.encodings = []
-        self.nombres = []
+        self.personas = []
 
         for archivo in os.listdir(ENCODINGS_DIR):
-            if archivo.endswith(".pkl"):
-                ruta = os.path.join(ENCODINGS_DIR, archivo)
-                with open(ruta, "rb") as f:
-                    encoding = pickle.load(f)
+            if not archivo.endswith(".pkl"):
+                continue
+
+            ruta = os.path.join(ENCODINGS_DIR, archivo)
+            with open(ruta, "rb") as f:
+                encoding = pickle.load(f)
+
+            if archivo.startswith("visitante_"):
+                idvisitante = int(archivo.replace("visitante_", "").replace("_encoding.pkl", ""))
+                self.personas.append({"tipo": "visitante", "idvisitante": idvisitante})
+            else:
                 nombre = archivo.replace("_encoding.pkl", "")
-                self.encodings.append(encoding)
-                self.nombres.append(nombre)
+                self.personas.append({"tipo": "residente", "nombre": nombre})
+
+            self.encodings.append(encoding)
 
         print(f"Encodings cargados: {len(self.encodings)}")
 
     def reconocer(self, frame):
+        if not self.encodings:
+            return None
+
         rgb = frame[:, :, ::-1].copy()
         small = cv2.resize(rgb, (0, 0), fx=0.5, fy=0.5)
         ubicaciones = face_recognition.face_locations(small)
@@ -44,6 +55,6 @@ class Recognizer:
         idx = int(np.argmin(distancias))
 
         if distancias[idx] <= TOLERANCE:
-            return self.nombres[idx]
+            return self.personas[idx]
 
-        return "desconocido"
+        return {"tipo": "desconocido"}
