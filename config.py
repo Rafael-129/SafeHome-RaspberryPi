@@ -12,5 +12,4 @@ LOG_FILE = os.getenv("LOG_FILE", "logs/scanner.log")
 
 RESIDENTES = {
     "rafael": 4,
-    "sandra": None
 }
