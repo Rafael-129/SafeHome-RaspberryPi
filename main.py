@@ -65,7 +65,7 @@ def main():
                     time.sleep(0.5)
                     continue
                 log.warning("Rostro desconocido. Acceso DENEGADO.")
-                api.registrar_historial(None, None, "Denegado", idvisitante=8)
+                api.registrar_historial(None, None, "Denegado")
                 ultimo_reconocido = "desconocido"
                 ultimo_tiempo = ahora
                 time.sleep(SCAN_INTERVAL)
@@ -85,6 +85,7 @@ def main():
                     api.registrar_historial(None, idscanner, "Permitido", idvisitante=idvisitante)
                     log.info(f"Acceso PERMITIDO: visitante {idvisitante}")
                 else:
+                    api.registrar_historial(None, None, "Denegado", idvisitante=idvisitante)
                     log.warning(f"Acceso DENEGADO: visitante {idvisitante}")
                 ultimo_reconocido = clave
                 ultimo_tiempo = ahora
@@ -109,6 +110,7 @@ def main():
                     api.registrar_historial(idusuario, idscanner, "Permitido")
                     log.info(f"Acceso PERMITIDO: {nombre}")
                 else:
+                    api.registrar_historial(idusuario, None, "Denegado")
                     log.warning(f"Acceso DENEGADO: {nombre}")
                 ultimo_reconocido = nombre
                 ultimo_tiempo = ahora
