@@ -59,6 +59,22 @@ class ApiClient:
             print(f"Error en scanner visitante: {e}")
             return None
 
+    def registrar_escaneo_desconocido(self, frame):
+        foto = self.frame_a_base64(frame)
+        payload = {
+            "idusuario": None,
+            "idvisitante": None,
+            "foto_capturada": foto,
+            "tipo_persona": "desconocido",
+        }
+        try:
+            resp = self.session.post(f"{API_BASE_URL}/scanner/", data=json.dumps(payload), timeout=10)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException as e:
+            print(f"Error en scanner desconocido: {e}")
+            return None
+
     def registrar_historial(self, idusuario, idscanner, estado, idvisitante=None):
         ahora = datetime.now()
         payload = {
