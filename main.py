@@ -65,7 +65,9 @@ def main():
                     time.sleep(0.5)
                     continue
                 log.warning("Rostro desconocido. Acceso DENEGADO.")
-                api.registrar_historial(None, None, "Denegado")
+                scanner_resp = api.registrar_escaneo_desconocido(frame)
+                idscanner = scanner_resp.get("idscanner") if scanner_resp else None
+                api.registrar_historial(None, idscanner, "Denegado")
                 ultimo_reconocido = "desconocido"
                 ultimo_tiempo = ahora
                 time.sleep(SCAN_INTERVAL)
