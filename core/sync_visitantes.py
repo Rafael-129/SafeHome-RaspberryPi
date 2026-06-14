@@ -35,6 +35,16 @@ def sincronizar_visitantes():
         print(f"Error al obtener visitantes: {e}")
         return
 
+    ids_validos = {v.get("idvisitante") for v in visitantes}
+
+    for archivo in os.listdir(ENCODINGS_DIR):
+        if not archivo.startswith("visitante_") or not archivo.endswith("_encoding.pkl"):
+            continue
+        idvisitante = int(archivo.replace("visitante_", "").replace("_encoding.pkl", ""))
+        if idvisitante not in ids_validos:
+            os.remove(os.path.join(ENCODINGS_DIR, archivo))
+            print(f"  Encoding eliminado (visitante {idvisitante} ya no existe): {archivo}")
+
     nuevos = 0
     for v in visitantes:
         idvisitante = v.get("idvisitante")
