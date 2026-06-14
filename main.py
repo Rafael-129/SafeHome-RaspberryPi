@@ -1,5 +1,6 @@
 import time
 import logging
+from datetime import date
 from config import SCAN_INTERVAL, LOG_FILE, RESIDENTES
 from core.camera import Camera
 from core.recognizer import Recognizer
@@ -40,10 +41,25 @@ def main():
 
     ultimo_reconocido = None
     ultimo_tiempo = 0
+    ultimo_purge_dia = date.today()
     COOLDOWN = 8
 
     try:
         while True:
+            # Purga diaria de fotos vencidas (politica de retencion de datos)
+            hoy = date.today()
+            if hoy != ultimo_purge_dia:
+                log.info("Ejecutando purga diaria de fotos de visitantes...")
+                resultado = api.purgar_fotos_vencidas()
+                if resultado:
+                    log.info(
+                        f"Purga: {resultado.get('visitantes')} fotos y "
+                        f"{resultado.get('capturas')} capturas eliminadas."
+                    )
+                sincronizar_visitantes()
+                recognizer.cargar_encodings()
+                ultimo_purge_dia = hoy
+
             frame = camera.capturar_frame()
             if frame is None:
                 log.warning("Frame no disponible. Reintentando...")

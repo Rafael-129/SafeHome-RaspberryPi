@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 import cv2
 import requests
-from config import API_BASE_URL
+from config import API_BASE_URL, PURGE_TOKEN
 
 
 class ApiClient:
@@ -73,6 +73,23 @@ class ApiClient:
             return resp.json()
         except requests.RequestException as e:
             print(f"Error en scanner desconocido: {e}")
+            return None
+
+    def purgar_fotos_vencidas(self):
+        headers = {}
+        if PURGE_TOKEN:
+            headers["X-Purge-Token"] = PURGE_TOKEN
+        try:
+            resp = self.session.post(
+                f"{API_BASE_URL}/visitantes/purgar_fotos/",
+                data=json.dumps({}),
+                headers=headers,
+                timeout=15,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except requests.RequestException as e:
+            print(f"Error en purga de fotos: {e}")
             return None
 
     def registrar_historial(self, idusuario, idscanner, estado, idvisitante=None):
