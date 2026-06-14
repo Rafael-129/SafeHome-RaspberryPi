@@ -1,9 +1,12 @@
 import base64
 import json
+import logging
 from datetime import datetime
 import cv2
 import requests
 from config import API_BASE_URL
+
+log = logging.getLogger("SafeHome")
 
 
 class ApiClient:
@@ -39,8 +42,8 @@ class ApiClient:
             resp.raise_for_status()
             return resp.json()
         except requests.RequestException as e:
-            print(f"Error en scanner: {e}")
-            print(f"Respuesta completa: {e.response.text if e.response is not None else 'Sin respuesta'}")
+            log.error(f"Error en scanner: {e}")
+            log.error(f"Respuesta completa: {e.response.text if e.response is not None else 'Sin respuesta'}")
             return None
             
     def registrar_escaneo_visitante(self, idvisitante, frame):
@@ -56,7 +59,7 @@ class ApiClient:
             resp.raise_for_status()
             return resp.json()
         except requests.RequestException as e:
-            print(f"Error en scanner visitante: {e}")
+            log.error(f"Error en scanner visitante: {e}")
             return None
 
     def registrar_escaneo_desconocido(self, frame):
@@ -72,7 +75,7 @@ class ApiClient:
             resp.raise_for_status()
             return resp.json()
         except requests.RequestException as e:
-            print(f"Error en scanner desconocido: {e}")
+            log.error(f"Error en scanner desconocido: {e}")
             return None
 
     def registrar_historial(self, idusuario, idscanner, estado, idvisitante=None):
@@ -91,5 +94,5 @@ class ApiClient:
             resp.raise_for_status()
             return resp.json()
         except requests.RequestException as e:
-            print(f"Error en historial: {e}")
+            log.error(f"Error en historial: {e}")
             return None

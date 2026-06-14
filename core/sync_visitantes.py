@@ -27,10 +27,18 @@ def foto_a_encoding(foto_b64):
 def sincronizar_visitantes():
     print("Sincronizando visitantes...")
     try:
-        resp = requests.get(f"{API_BASE_URL}/visitantes/", timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        visitantes = data.get("results", data) if isinstance(data, dict) else data
+        visitantes = []
+        url = f"{API_BASE_URL}/visitantes/"
+        while url:
+            resp = requests.get(url, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            if isinstance(data, dict):
+                visitantes.extend(data.get("results", []))
+                url = data.get("next")
+            else:
+                visitantes = data
+                url = None
     except Exception as e:
         print(f"Error al obtener visitantes: {e}")
         return
