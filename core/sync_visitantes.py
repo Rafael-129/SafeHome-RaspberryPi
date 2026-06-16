@@ -9,18 +9,27 @@ from PIL import Image
 from config import API_BASE_URL, ENCODINGS_DIR
 
 
-def foto_a_encoding(foto_b64):
+def _obtener_bytes_foto(foto):
+    """La foto puede venir como URL (Azure Blob con SAS) o como base64 (legado)."""
+    if foto.startswith("http://") or foto.startswith("https://"):
+        resp = requests.get(foto, timeout=15)
+        resp.raise_for_status()
+        return resp.content
+    if "," in foto:
+        foto = foto.split(",", 1)[1]
+    return base64.b64decode(foto)
+
+
+def foto_a_encoding(foto):
     try:
-        if "," in foto_b64:
-            foto_b64 = foto_b64.split(",", 1)[1]
-        img_bytes = base64.b64decode(foto_b64)
+        img_bytes = _obtener_bytes_foto(foto)
         img_pil = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         img_np = np.array(img_pil)
         encodings = face_recognition.face_encodings(img_np)
         if encodings:
             return encodings[0]
     except Exception as e:
-        print(f"Error decodificando foto: {e}")
+        print(f"Error procesando foto: {e}")
     return None
 
 
