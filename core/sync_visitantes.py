@@ -50,10 +50,18 @@ def sincronizar_visitantes():
         idvisitante = v.get("idvisitante")
         foto = v.get("foto")
 
-        if not foto or not idvisitante:
+        if not idvisitante:
             continue
 
         ruta_pkl = os.path.join(ENCODINGS_DIR, f"visitante_{idvisitante}_encoding.pkl")
+
+        # Foto purgada (retencion 30 dias): el visitante existe pero ya no tiene
+        # foto, asi que eliminamos su encoding para que deje de reconocerse.
+        if not foto:
+            if os.path.exists(ruta_pkl):
+                os.remove(ruta_pkl)
+                print(f"  Encoding eliminado (foto purgada): visitante_{idvisitante}")
+            continue
 
         if os.path.exists(ruta_pkl):
             continue
